@@ -49,9 +49,9 @@ protected:
         // from last_letter skywalker_2013/aerodynamics.yaml
         // thanks to Georacer!
         float s = 0.7536;
-        float b = 1;
+        float b = 1.0;
         float c = 0.77;
-        float c_lift_0 = 0;
+        float c_lift_0 = 0.0;
         float c_lift_deltae = -0.5;
         float c_lift_a = 3.38;
         float c_lift_q = 5.148;
@@ -61,28 +61,28 @@ protected:
         float c_drag_q = 0.415;
         float c_drag_deltae = 0.0;
         float c_drag_p = 0.1;
-        float c_y_0 = 0;
+        float c_y_0 = 0.0;
         float c_y_b = -0.602;
         float c_y_p = 0.605;
         float c_y_r = -0.767;
         float c_y_deltaa = -0.0804;
-        float c_y_deltar = 0;
-        float c_l_0 = 0;
+        float c_y_deltar = 0.0;
+        float c_l_0 = 0.0;
         float c_l_p = -0.686;
         float c_l_b = -0.317;
         float c_l_r = 0.336;
         float c_l_deltaa = 0.4631;
-        float c_l_deltar = 0;
+        float c_l_deltar = 0.0;
         float c_m_0 = -0.002;
         float c_m_a = -0.63;
         float c_m_q = -2.176;
         float c_m_deltae = 0.25;
-        float c_n_0 = 0;
+        float c_n_0 = 0.0;
         float c_n_b = 0.3278;
         float c_n_p = 0.341;
         float c_n_r = -0.445;
         float c_n_deltaa = 0.00;
-        float c_n_deltar = 0;
+        float c_n_deltar = 0.0;
         float deltaa_max = 0.3491;
         float deltae_max = 0.3491;
         float deltar_max = 0.3491;

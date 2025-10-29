@@ -38,7 +38,7 @@ Plane::Plane(const char *frame_str) :
         coefficient = default_coefficients;
     }
 
-    mass = 2.0f;
+    mass = 12.0f;
 
     /*
        scaling from motor power to Newtons. Allows the plane to hold

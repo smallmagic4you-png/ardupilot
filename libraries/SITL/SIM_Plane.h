@@ -41,7 +41,7 @@ public:
     }
 
 protected:
-    const float hover_throttle = 0.7f;
+    const float hover_throttle = 0.4f;
     float angle_of_attack;
     float beta;
 

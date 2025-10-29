@@ -336,6 +336,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	la +=  CGOffset.y * force.z - CGOffset.z * force.y;
 	ma += -CGOffset.x * force.z + CGOffset.z * force.x;
 	na += -CGOffset.y * force.x + CGOffset.x * force.y;
+    la /= 1.11;
+    ma /= 1.05;
+    na /= 2.46;
 
 	return Vector3f(la, ma, na);
 }

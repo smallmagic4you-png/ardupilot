@@ -44,7 +44,7 @@ Plane::Plane(const char *frame_str) :
        scaling from motor power to Newtons. Allows the plane to hold
        vertically against gravity when the motor is at hover_throttle
     */
-    thrust_scale = 1.5*(mass * GRAVITY_MSS) / hover_throttle;
+    thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;

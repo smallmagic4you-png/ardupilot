@@ -235,7 +235,6 @@ void Plane::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param
 float Plane::liftCoeff(float alpha) const
 {
     const float alpha0 = coefficient.alpha_stall;
-    const float M = coefficient.mcoeff;
     const float c_lift_0 = coefficient.c_lift_0;
     const float c_lift_a0 = coefficient.c_lift_a;
 
@@ -256,14 +255,6 @@ float Plane::liftCoeff(float alpha) const
 
 float Plane::dragCoeff(float alpha) const
 {
-    const float b = coefficient.b;
-    const float s = coefficient.s;
-    const float c_drag_p = coefficient.c_drag_p;
-    const float c_lift_0 = coefficient.c_lift_0;
-    const float c_lift_a0 = coefficient.c_lift_a;
-    const float oswald = coefficient.oswald;
-    
-	double AR = pow(b,2)/s;
 	double c_drag_a = 2.6786081629 * alpha * alpha + 0.012249247 * alpha + 0.027315278;
 
 	return c_drag_a;

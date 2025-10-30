@@ -246,11 +246,11 @@ float Plane::liftCoeff(float alpha) const
     } else if (alpha0-alpha > max_alpha_delta) {
         alpha = alpha0 - max_alpha_delta;
     }
-	double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
-	double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
-	double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
+	// double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
+	double linear = (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
+	// double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
 
-	float result  = linear+flatPlate;
+	float result  = linear;
 	return result;
 }
 
@@ -264,7 +264,7 @@ float Plane::dragCoeff(float alpha) const
     const float oswald = coefficient.oswald;
     
 	double AR = pow(b,2)/s;
-	double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
+	double c_drag_a = 2.6786081629 * alpha * alpha + 0.012249247 * alpha + 0.027315278;
 
 	return c_drag_a;
 }

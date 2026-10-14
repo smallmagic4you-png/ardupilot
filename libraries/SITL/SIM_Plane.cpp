@@ -38,14 +38,7 @@ Plane::Plane(const char *frame_str) :
         coefficient = default_coefficients;
     }
 
-    // Chosen to approximately match a historical (simpler) battery model
-    constexpr float default_battery_resistance_ohm = 0.0145f;
-    battery.setup(sitl->batt_capacity_ah,
-                  default_battery_resistance_ohm,
-                  sitl->batt_voltage,
-                  ambient_outside_temperature_degC());
-
-    mass = 2.0f;
+    mass = 12.0f;
 
     /*
        scaling from motor power to Newtons. Allows the plane to hold
@@ -108,6 +101,9 @@ Plane::Plane(const char *frame_str) :
     if (strstr(frame_str, "-3d")) {
         aerobatic = true;
         thrust_scale *= 1.5;
+        // setup parameters for plane-3d
+        AP_Param::load_defaults_file("@ROMFS/models/plane.parm", false);
+        AP_Param::load_defaults_file("@ROMFS/models/plane-3d.parm", false);
     }
 #endif
 
@@ -129,16 +125,16 @@ void Plane::load_coeffs(const char *model_json)
         fname = strdup(model_json);
     } else {
         IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", model_json));
-        if (fname == nullptr || AP::FS().stat(fname, &st) != 0) {
+        if (AP::FS().stat(model_json, &st) != 0) {
             AP_HAL::panic("%s failed to load", model_json);
         }
     }
     if (fname == nullptr) {
         AP_HAL::panic("%s failed to load", model_json);
     }
-    AP_JSON::value *obj = AP_JSON::load_json(fname);
+    AP_JSON::value *obj = AP_JSON::load_json(model_json);
     if (obj == nullptr) {
-        AP_HAL::panic("%s failed to load", fname);
+        AP_HAL::panic("%s failed to load", model_json);
     }
 
     enum class VarType {
@@ -212,8 +208,7 @@ void Plane::load_coeffs(const char *model_json)
 
     delete obj;
 
-    ::printf("Loaded plane aero coefficients from %s\n", fname);
-    free(fname);
+    ::printf("Loaded plane aero coefficients from %s\n", model_json);
 }
 
 void Plane::parse_float(AP_JSON::value val, const char* label, float &param) {
@@ -240,7 +235,6 @@ void Plane::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param
 float Plane::liftCoeff(float alpha) const
 {
     const float alpha0 = coefficient.alpha_stall;
-    const float M = coefficient.mcoeff;
     const float c_lift_0 = coefficient.c_lift_0;
     const float c_lift_a0 = coefficient.c_lift_a;
 
@@ -251,25 +245,17 @@ float Plane::liftCoeff(float alpha) const
     } else if (alpha0-alpha > max_alpha_delta) {
         alpha = alpha0 - max_alpha_delta;
     }
-	double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
-	double linear = (1.0-sigmoid) * (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
-	double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
+	// double sigmoid = ( 1+exp(-M*(alpha-alpha0))+exp(M*(alpha+alpha0)) ) / (1+exp(-M*(alpha-alpha0))) / (1+exp(M*(alpha+alpha0)));
+	double linear = (c_lift_0 + c_lift_a0*alpha); //Lift at small AoA
+	// double flatPlate = sigmoid*(2*copysign(1,alpha)*pow(sin(alpha),2)*cos(alpha)); //Lift beyond stall
 
-	float result  = linear+flatPlate;
+	float result  = linear;
 	return result;
 }
 
 float Plane::dragCoeff(float alpha) const
 {
-    const float b = coefficient.b;
-    const float s = coefficient.s;
-    const float c_drag_p = coefficient.c_drag_p;
-    const float c_lift_0 = coefficient.c_lift_0;
-    const float c_lift_a0 = coefficient.c_lift_a;
-    const float oswald = coefficient.oswald;
-    
-	double AR = pow(b,2)/s;
-	double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
+	double c_drag_a = 2.6786081629 * alpha * alpha + 0.012249247 * alpha + 0.027315278;
 
 	return c_drag_a;
 }
@@ -341,6 +327,9 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	la +=  CGOffset.y * force.z - CGOffset.z * force.y;
 	ma += -CGOffset.x * force.z + CGOffset.z * force.x;
 	na += -CGOffset.y * force.x + CGOffset.x * force.y;
+    la /= 1.11;
+    ma /= 1.05;
+    na /= 2.46;
 
 	return Vector3f(la, ma, na);
 }
@@ -406,6 +395,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float elevator = filtered_servo_angle(input, 1);
     float rudder   = filtered_servo_angle(input, 3);
     bool launch_triggered = input.servos[6] > 1700;
+    float throttle;
     if (reverse_elevator_rudder) {
         elevator = -elevator;
         rudder = -rudder;
@@ -448,14 +438,19 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
     //printf("Aileron: %.1f elevator: %.1f rudder: %.1f\n", aileron, elevator, rudder);
 
-    float thrust = reverse_thrust ? filtered_servo_angle(input, 2) : filtered_servo_range(input, 2);
+    if (reverse_thrust) {
+        throttle = filtered_servo_angle(input, 2);
+    } else {
+        throttle = filtered_servo_range(input, 2);
+    }
+    
+    float thrust     = throttle;
+
+    battery_voltage = sitl->batt_voltage - 0.7*throttle;
+    battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
 
     if (ice_engine) {
         thrust = icengine.update(input);
-    } else {
-        if (battery_is_empty()) {
-            thrust = 0.0f;
-        }
     }
 
     // calculate angle of attack
@@ -525,7 +520,7 @@ void Plane::update(const struct sitl_input &input)
     update_wind(input);
     
     calculate_forces(input, rot_accel);
-    update_battery(input);
+    
     update_dynamics(rot_accel);
 
     /*
@@ -547,14 +542,4 @@ void Plane::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-}
-
-void Plane::update_battery(const struct sitl_input &input) {
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
-
-    float throttle = reverse_thrust ? filtered_servo_angle(input, 2) : filtered_servo_range(input, 2);
-    battery_current = 50.0f * sq(throttle);
-    battery.consume_energy(battery_current, AP_HAL::micros64());
-    battery_voltage = battery.get_voltage();
-    battery_temperature_degC = battery.get_temperature_degC();
 }

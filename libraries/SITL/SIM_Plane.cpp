@@ -255,7 +255,7 @@ float Plane::liftCoeff(float alpha) const
 
 float Plane::dragCoeff(float alpha) const
 {
-	double c_drag_a = 2.6786081629 * alpha * alpha + 0.012249247 * alpha + 0.027315278;
+	double c_drag_a = 2.1716 * alpha * alpha - 0.1395 * alpha + 0.0205;
 
 	return c_drag_a;
 }
